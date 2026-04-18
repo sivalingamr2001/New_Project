@@ -1,0 +1,6 @@
+@Janatics.Api_HostAddress = http://localhost:5136
+
+GET {{Janatics.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
