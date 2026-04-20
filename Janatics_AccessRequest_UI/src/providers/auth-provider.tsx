@@ -13,6 +13,7 @@ const STORAGE_KEY = "janatics-auth-user";
 type AuthContextValue = {
   user: AuthResponse | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (request: LoginRequest) => Promise<AuthResponse>;
   register: (request: RegisterRequest) => Promise<AuthResponse>;
   logout: () => void;
@@ -22,22 +23,31 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    const storedUser = localStorage.getItem(STORAGE_KEY);
+    const storedAccessToken = localStorage.getItem("accessToken");
+    const storedRefreshToken = localStorage.getItem("refreshToken");
+
+    if (storedUser && storedAccessToken && storedRefreshToken) {
       try {
-        setUser(JSON.parse(stored) as AuthResponse);
+        setUser(JSON.parse(storedUser) as AuthResponse);
       } catch {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
       }
     }
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
     const handleLogout = () => {
       setUser(null);
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
     };
 
     window.addEventListener("auth:logout", handleLogout);
@@ -48,6 +58,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const auth = await authApi.login(request);
     setUser(auth);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
+    localStorage.setItem("accessToken", auth.accessToken);
+    localStorage.setItem("refreshToken", auth.refreshToken);
     return auth;
   };
 
@@ -55,23 +67,28 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const auth = await authApi.register(request);
     setUser(auth);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
+    localStorage.setItem("accessToken", auth.accessToken);
+    localStorage.setItem("refreshToken", auth.refreshToken);
     return auth;
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
   };
 
   const value = useMemo(
     () => ({
       user,
       isAuthenticated: user !== null,
+      isLoading,
       login,
       register,
       logout,
     }),
-    [user]
+    [user, isLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

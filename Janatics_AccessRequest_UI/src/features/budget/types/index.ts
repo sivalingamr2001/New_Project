@@ -214,3 +214,66 @@ export function mapBudgetApiToUi(response: BudgetRecordResponse): BudgetRecord {
     budgetData: categories,
   };
 }
+
+// Actual Amounts Types & Services
+export interface ActualAmountItem {
+  category: string;
+  subCategory: string;
+  amount: number;
+}
+
+export interface ActualAmountsRequest {
+  projectCode: string;
+  productNo: string;
+}
+
+export interface ActualAmountsResponse {
+  projectCode: string;
+  productNo: string;
+  items: ActualAmountItem[];
+  lastUpdated: string;
+}
+
+export async function getActualAmounts(
+  projectCode: string,
+  productNo: string
+) {
+  const response = await api.post<ActualAmountsResponse>("/budgets/actual-amounts", {
+    projectCode,
+    productNo,
+  });
+  return response.data;
+}
+
+// Validator: Check if category and sub-category match the budget structure
+export function validateAndMapActualAmounts(
+  actualAmounts: ActualAmountItem[],
+  budgetCategories: BudgetCategory[]
+): Map<string, number> {
+  const actualAmountsMap = new Map<string, number>();
+
+  actualAmounts.forEach((item) => {
+    // Create a normalized key for matching
+    const actualKey = `${item.category.toLowerCase().trim()}|${item.subCategory.toLowerCase().trim()}`;
+
+    // Find matching category and item in budget
+    const matchedCategory = budgetCategories.find(
+      (cat) => cat.category.toLowerCase().trim() === item.category.toLowerCase().trim()
+    );
+
+    if (matchedCategory) {
+      const matchedItem = matchedCategory.items.find(
+        (budgetItem) =>
+          budgetItem.name.toLowerCase().trim() === item.subCategory.toLowerCase().trim()
+      );
+
+      if (matchedItem) {
+        // Store the mapping for later use
+        actualAmountsMap.set(actualKey, item.amount);
+      }
+    }
+  });
+
+  return actualAmountsMap;
+}
+

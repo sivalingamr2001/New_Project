@@ -23,17 +23,50 @@ import {
   LogOut,
   User,
 } from "lucide-react"
-import { Link, useLocation } from "react-router-dom" // Import useLocation
+import { useLocation, useNavigate } from "react-router-dom"
+import { useNavigationBlock } from "@/providers/NavigationBlockProvider"
+import { DraftConfirmationDialog } from "@/features/budget/components/DraftConfirmationDialog"
+import { useState } from "react"
 
 export function Header() {
   const { user, logout } = useAuth()
-  const { pathname } = useLocation() // Get the current path
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { isBlocked, blockRecord, onConfirm } = useNavigationBlock()
+  const [showBlockDialog, setShowBlockDialog] = useState(false)
 
   const navigation = [
     { name: "Dashboard", to: "/budget/dashboard", icon: LayoutDashboard },
     { name: "Plan Entry", to: "/budget/plan-entry", icon: FileText },
     { name: "Analytics", to: "/budget/analytics", icon: BarChart3 },
   ]
+
+  const handleNavigation = (to: string) => {
+    if (isBlocked) {
+      setShowBlockDialog(true)
+    } else {
+      navigate(to)
+    }
+  }
+
+  const handleSaveDraft = () => {
+    // The draft saving is handled in PlanEntry component
+    onConfirm()
+    setShowBlockDialog(false)
+    // Navigate after confirmation
+    setTimeout(() => {
+      window.location.reload() // Force reload to clear state
+    }, 100)
+  }
+
+  const handleClear = () => {
+    onConfirm()
+    setShowBlockDialog(false)
+    // Navigate after confirmation
+    setTimeout(() => {
+      window.location.reload() // Force reload to clear state
+    }, 100)
+  }
 
   return (
     <header className="sticky top-0 z-30 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -58,22 +91,22 @@ export function Header() {
             {navigation.map((item) => {
               const isActive = pathname === item.to
               return (
-                <Link key={item.name} to={item.to}>
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
-                    size="sm"
-                    className={`h-8 gap-2 px-4 transition-all duration-200 ${
-                      isActive
-                        ? "bg-background text-primary shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span className="hidden font-medium md:inline">
-                      {item.name}
-                    </span>
-                  </Button>
-                </Link>
+                <Button
+                  key={item.name}
+                  variant={isActive ? "secondary" : "ghost"}
+                  size="sm"
+                  className={`h-8 gap-2 px-4 transition-all duration-200 ${
+                    isActive
+                      ? "bg-background text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => handleNavigation(item.to)}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="hidden font-medium md:inline">
+                    {item.name}
+                  </span>
+                </Button>
               )
             })}
           </nav>
@@ -126,6 +159,16 @@ export function Header() {
           </div>
         </div>
       </div>
+
+      {blockRecord && (
+        <DraftConfirmationDialog
+          isOpen={showBlockDialog}
+          onClose={() => setShowBlockDialog(false)}
+          onSaveDraft={handleSaveDraft}
+          onClear={handleClear}
+          record={blockRecord}
+        />
+      )}
     </header>
   )
 }

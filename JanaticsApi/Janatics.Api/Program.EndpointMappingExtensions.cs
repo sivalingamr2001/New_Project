@@ -1,4 +1,5 @@
 ﻿using Janatics.Api.Features.Auth;
+using Janatics.Api.Features.Budget;
 using Janatics.Api.Features.Departments.Create;
 using Janatics.Api.Features.Departments.Get;
 using Janatics.Api.Features.Departments.Update;
@@ -42,6 +43,9 @@ public static class EndpointMappingExtensions
 
         var notifications = api.MapGroup("/notifications");
         NotificationEndpoints.Map(notifications);
+
+        var budgets = api.MapGroup("/budgets");
+        ActualAmountsEndpoints.Map(budgets);
 
         app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
             .WithName("HealthCheck")

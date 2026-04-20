@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -8,13 +8,37 @@ import { Spinner } from "@/shared/components/ui/spinner";
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const from = (location.state as { from?: string })?.from ?? "/budget/dashboard";
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate, from]);
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <span className="text-sm text-muted-foreground">Checking authentication...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render login form if already authenticated
+  if (isAuthenticated) {
+    return null;
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

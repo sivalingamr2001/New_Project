@@ -7,6 +7,8 @@ export type AuthResponse = {
   fullName: string;
   role: string;
   email: string;
+  accessToken: string;
+  refreshToken: string;
 };
 
 export type LoginRequest = {

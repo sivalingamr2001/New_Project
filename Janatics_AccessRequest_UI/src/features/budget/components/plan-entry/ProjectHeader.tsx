@@ -17,6 +17,7 @@ import type { BudgetRecord } from "@/features/budget/types"
 interface ProjectHeaderProps {
   record: BudgetRecord
   onSaveDraft: () => Promise<void>
+  onSaveRecord?: () => Promise<void>
   onDiscardDraft: () => void
   onExportCsv: () => void
 }
@@ -24,6 +25,7 @@ interface ProjectHeaderProps {
 export function ProjectHeader({
   record,
   onSaveDraft,
+  onSaveRecord,
   onDiscardDraft,
   onExportCsv,
 }: ProjectHeaderProps) {
@@ -91,14 +93,25 @@ export function ProjectHeader({
               <FileDown className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
+            {onSaveRecord && (
+              <Button
+                disabled={!isFormValid}
+                onClick={onSaveRecord}
+                size="sm"
+                variant="default"
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Save Record
+              </Button>
+            )}
             <Button
               disabled={!isFormValid}
               onClick={handleSaveDraft}
               size="sm"
-              variant="default"
+              variant="outline"
             >
               <Save className="mr-2 h-4 w-4" />
-              Save
+              Save Draft
             </Button>
           </div>
         </div>

@@ -1,19 +1,21 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { Plus } from "lucide-react"
+import { Plus, FileText } from "lucide-react"
 import { toast } from "sonner"
 
 import DataGrid from "@/features/DynamicGrid/components/DataGrid/DataGrid"
 import { Button } from "@/shared/components/ui/button"
 import { ProjectInformation } from "../components/ProjectInformation"
 import CreateBudgetModal from "../components/CreateBudgetModal"
+import { useBudget } from "@/providers/Budget/BudgetProvider"
+import type { BudgetRecord } from "../types"
 
 export default function Dashboard() {
-  const [budgetData, setBudgetData] = useState<any[]>([])
-  const [hasSearched, setHasSearched] = useState(false)
+  const { budgetRecords, fetchBudgetRecords, loading, error } = useBudget()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [draftRecords, setDraftRecords] = useState<BudgetRecord[]>([])
 
   // Track search params to auto-fill the modal
   const [searchParams, setSearchParams] = useState({
@@ -22,6 +24,27 @@ export default function Dashboard() {
   })
 
   const navigate = useNavigate()
+
+  useEffect(() => {
+    fetchBudgetRecords()
+    loadDraftRecords()
+  }, [fetchBudgetRecords])
+
+  const loadDraftRecords = () => {
+    const drafts: BudgetRecord[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith("budget-plan-entry-draft")) {
+        try {
+          const draft = JSON.parse(localStorage.getItem(key)!) as BudgetRecord
+          drafts.push(draft)
+        } catch (e) {
+          // Skip invalid drafts
+        }
+      }
+    }
+    setDraftRecords(drafts)
+  }
 
   const summaryText = useMemo(
     () =>
@@ -32,26 +55,55 @@ export default function Dashboard() {
   const columnDefs = useMemo(
     () => [
       {
-        field: "ProjectTitle",
+        field: "projectHeader.productName",
         headerName: "Project Title",
         flex: 1,
         minWidth: 200,
       },
-      { field: "projectNo", headerName: "Project Number", flex: 1 },
-      { field: "productNo", headerName: "Product Number", flex: 1 },
+      { field: "projectHeader.projectCode", headerName: "Project Number", flex: 1 },
+      { field: "projectHeader.productNo", headerName: "Product Number", flex: 1 },
       {
-        field: "status",
+        field: "projectHeader.status",
         headerName: "Status",
         flex: 1,
         cellRenderer: (params: any) => {
-          const isApproved = params.value === "true" || params.value === true
+          const status = params.value
+          const isOnTrack = status === "ON TRACK"
           return (
             <span
-              className={`font-semibold ${isApproved ? "text-green-600" : "text-red-500"}`}
+              className={`font-semibold ${isOnTrack ? "text-green-600" : "text-red-500"}`}
             >
-              {isApproved ? "Approved" : "Pending"}
+              {status}
             </span>
           )
+        },
+      },
+    ],
+    []
+  )
+
+  const handleLoadDraft = (record: BudgetRecord) => {
+    navigate("/budget/plan-entry", {
+      state: { draftRecord: record },
+    })
+  }
+
+  const draftColumnDefs = useMemo(
+    () => [
+      {
+        field: "projectHeader.productName",
+        headerName: "Project Title",
+        flex: 1,
+        minWidth: 200,
+      },
+      { field: "projectHeader.projectCode", headerName: "Project Number", flex: 1 },
+      { field: "projectHeader.productNo", headerName: "Product Number", flex: 1 },
+      {
+        field: "projectHeader.lastUpdated",
+        headerName: "Last Updated",
+        flex: 1,
+        cellRenderer: (params: any) => {
+          return new Date(params.value).toLocaleDateString()
         },
       },
     ],
@@ -68,12 +120,8 @@ export default function Dashboard() {
     const isNotFound = data?.status === 404 || data?.title === "Not found"
 
     if (isNotFound) {
-      setBudgetData([])
-    } else {
-      const normalizedData = Array.isArray(data) ? data : data ? [data] : []
-      setBudgetData(normalizedData)
+      // Could filter records here if needed
     }
-    setHasSearched(true)
   }
 
   async function handleNavigateToPlanEntry(input: {
@@ -94,6 +142,14 @@ export default function Dashboard() {
     }
   }
 
+  if (loading) {
+    return <div className="flex justify-center p-8">Loading budget records...</div>
+  }
+
+  if (error) {
+    return <div className="flex justify-center p-8 text-red-500">Error: {error}</div>
+  }
+
   return (
     <div className="flex flex-col gap-8 p-6 md:p-4">
       <header className="rounded-sm border border-border bg-card/80 p-6 shadow-sm backdrop-blur md:p-8">
@@ -112,31 +168,57 @@ export default function Dashboard() {
         {/* Pass the updated handler to ProjectInformation */}
         <ProjectInformation onDataReceived={handleDataUpdate} />
 
-        {hasSearched && (
+        <div className="animate-in duration-500 fade-in slide-in-from-bottom-4">
+          <DataGrid
+            rowData={budgetRecords as unknown as Record<string, unknown>[]}
+            columnDefs={columnDefs}
+            title="Budget Records"
+            gridId="budget-grid"
+            noRowsMessage="No budget records found"
+            showSearch={true}
+            showRefreshButton={true}
+            showClearFiltersButton={true}
+            showExportCsvButton={true}
+            showSelectedCount={true}
+            gridHeight="auto"
+            toolbarRight={
+              <Button
+                size="sm"
+                className="gap-2"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Create New Budget
+              </Button>
+            }
+          />
+        </div>
+
+        {draftRecords.length > 0 && (
           <div className="animate-in duration-500 fade-in slide-in-from-bottom-4">
             <DataGrid
-              rowData={budgetData}
-              columnDefs={columnDefs}
-              title="Budget Records"
-              gridId="budget-grid"
-              noRowsMessage="No budget record found for this selection"
+              rowData={draftRecords as unknown as Record<string, unknown>[]}
+              columnDefs={draftColumnDefs}
+              title="Draft Budgets"
+              gridId="draft-budget-grid"
+              noRowsMessage="No draft budgets found"
               showSearch={false}
-              showRefreshButton={false}
+              showRefreshButton={true}
               showClearFiltersButton={false}
               showExportCsvButton={false}
-              showSelectedCount={true}
+              showSelectedCount={false}
               gridHeight="auto"
+              onRowClicked={(row) => row.data && handleLoadDraft(row.data as unknown as BudgetRecord)}
               toolbarRight={
-                budgetData.length === 0 && (
-                  <Button
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => setIsModalOpen(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Create New Budget
-                  </Button>
-                )
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={loadDraftRecords}
+                >
+                  <FileText className="h-4 w-4" />
+                  Refresh Drafts
+                </Button>
               }
             />
           </div>
