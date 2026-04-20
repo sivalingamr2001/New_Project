@@ -34,6 +34,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
+  useEffect(() => {
+    const handleLogout = () => {
+      setUser(null);
+      localStorage.removeItem(STORAGE_KEY);
+    };
+
+    window.addEventListener("auth:logout", handleLogout);
+    return () => window.removeEventListener("auth:logout", handleLogout);
+  }, []);
+
   const login = async (request: LoginRequest) => {
     const auth = await authApi.login(request);
     setUser(auth);

@@ -1,9 +1,8 @@
 "use client"
 
-import { Menu } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/shared/components/ui/sheet"
-import { Sidebar } from "./Sidebar"
+import { Sheet, SheetTrigger } from "@/shared/components/ui/sheet"
+import { Menu } from "lucide-react"
 
 export function MobileNav() {
   return (
@@ -14,9 +13,6 @@ export function MobileNav() {
           <span className="sr-only">Open menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="p-0 w-64">
-        <Sidebar variant="mobile" />
-      </SheetContent>
     </Sheet>
   )
 }

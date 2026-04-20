@@ -1,4 +1,4 @@
-import type { AxiosResponse, AxiosRequestConfig } from "axios";
+import type { AxiosResponse } from "axios";
 import { apiService, type ApiResponse } from "@/shared/lib/api-client";
 
 export type AuthResponse = {

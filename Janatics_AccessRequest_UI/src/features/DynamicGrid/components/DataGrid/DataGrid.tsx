@@ -11,7 +11,7 @@ import { useTheme } from "@/providers/theme-provider";
 import { Separator } from "@/shared/components/ui/separator";
 import { useDataGrid } from "../../hooks/useDataGrid";
 import type { DataGridProps } from "../../types/DataGrid.types";
-import { mergeColDef, PageSizeStorage, resolveGridHeight } from "../../utils/gridUtils";
+import { mergeColDef, PageSizeStorage } from "../../utils/gridUtils";
 import { GridFooter } from "./GridFooter";
 import { LoadingOverlay, NoRowsOverlay } from "./GridOverlays";
 import { GridToolbar } from "./GridToolbar";
@@ -88,7 +88,7 @@ function DataGridInner<TData extends Record<string, unknown>>(
     noRowsMessage = "No records found",
     loadingMessage = "Loading data…",
     onRowClicked,
-    gridHeight,
+    gridHeight = "400px",
     compact = false,
     theme = "system",
     defaultColDef: defaultColDefProp,
@@ -130,6 +130,7 @@ function DataGridInner<TData extends Record<string, unknown>>(
     () => ({
       pagination: true,
       paginationPageSize: pageSize,
+      domLayout: 'autoHeight',
       paginationPageSizeSelector: false,
       suppressPaginationPanel: true,
       animateRows,
@@ -163,7 +164,6 @@ function DataGridInner<TData extends Record<string, unknown>>(
   }, [theme, appTheme]);
 
   const selectedTheme = resolvedTheme === "dark" ? darkTheme : lightTheme;
-  const heightStyle = resolveGridHeight(gridHeight);
 
   return (
     <>
@@ -242,7 +242,7 @@ function DataGridInner<TData extends Record<string, unknown>>(
         {/* Grid */}
         <div className="datagrid-scroll-shell">
           <div className="datagrid-scroll-inner">
-            <div style={{ height: heightStyle, width: "100%", position: "relative", margin: "15px 0" }}>
+             <div style={{ height: gridHeight, width: "100%", position: "relative", margin: "15px 0" }}>
               <AgGridReact<TData>
                 rowData={rowData}
                 columnDefs={columnDefs}

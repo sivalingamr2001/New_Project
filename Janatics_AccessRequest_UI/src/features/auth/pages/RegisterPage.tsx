@@ -1,17 +1,24 @@
-import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
+import { type ChangeEvent, type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { useAuth } from "@/providers/auth-provider";
-import { departmentApi } from "@/features/departments/api/departmentsApi";
-import { type DepartmentDto } from "@/features/departments/api/departmentsApi";
 import { Spinner } from "@/shared/components/ui/spinner";
+
+type DepartmentDto = {
+  departmentId: number;
+  departmentName: string;
+};
+
+const DEFAULT_DEPARTMENTS: DepartmentDto[] = [
+  { departmentId: 0, departmentName: "General" },
+];
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
-  const [departments, setDepartments] = useState<DepartmentDto[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [departments] = useState<DepartmentDto[]>(DEFAULT_DEPARTMENTS);
+  const loading = false;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -26,27 +33,6 @@ export default function RegisterPage() {
     departmentId: 0,
   });
 
-  useEffect(() => {
-    void (async () => {
-      setLoading(true);
-      try {
-        const page = await departmentApi.getDepartments(1, 100);
-        setDepartments(page.data);
-        setForm((current) => ({
-          ...current,
-          departmentId: page.data[0]?.departmentId ?? 0,
-        }));
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Unable to load departments."
-        );
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;

@@ -6,9 +6,7 @@ import {
   IconFileInvoice,
   IconShieldCheck,
   IconUsers,
-  IconBell,
   IconHistory,
-  IconDeviceFloppy,
 } from "@tabler/icons-react";
 import type { NavigationSection } from "../types";
 
@@ -28,12 +26,6 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         icon: IconFileInvoice,
         roles: ["User"],
       },
-      {
-        label: "Notifications",
-        to: "/notifications",
-        icon: IconBell,
-        roles: ["User"],
-      },
     ],
   },
   {
@@ -49,12 +41,6 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         label: "All Requests",
         to: "/hod/all-requests",
         icon: IconFileInvoice,
-        roles: ["Hod"],
-      },
-      {
-        label: "Notifications",
-        to: "/notifications",
-        icon: IconBell,
         roles: ["Hod"],
       },
     ],
@@ -96,12 +82,6 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         label: "Audit Logs",
         to: "/audit-logs",
         icon: IconHistory,
-        roles: ["Admin"],
-      },
-      {
-        label: "Notifications",
-        to: "/notifications",
-        icon: IconBell,
         roles: ["Admin"],
       },
     ],
