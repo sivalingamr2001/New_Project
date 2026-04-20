@@ -1,11 +1,7 @@
 
 using Janatics.Application.Common.Models;
 using Janatics.Application.Features.Auth.Dtos;
-using Janatics.Domain.Entities;
-using Janatics.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
+using Janatics.Application.Features.Auth.Services;
 
 namespace Janatics.Api.Features.Auth;
 
@@ -31,98 +27,35 @@ public static class AuthEndpoints
         return group;
     }
 
-    // ── POST /api/auth/register ───────────────────────────────────────────────
-
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
-        AppDbContext db,
+        IAuthService service,
         CancellationToken ct)
     {
-        // Validation
-        if (string.IsNullOrWhiteSpace(request.Username) ||
-            string.IsNullOrWhiteSpace(request.Password) ||
-            string.IsNullOrWhiteSpace(request.Email))
+        try
+        {
+            var result = await service.RegisterAsync(request, ct);
+            return Results.Created(
+                $"/api/auth/login",
+                ApiResult<AuthResponse>.Ok(result, "Registration successful."));
+        }
+        catch (InvalidOperationException ex)
         {
             return Results.BadRequest(
-                ApiResult<AuthResponse>.Fail("Username, Password, and Email are required."));
+                ApiResult<AuthResponse>.Fail(ex.Message));
         }
-
-        // Check duplicate username
-        var exists = await db.Employees.AnyAsync(e => e.Username == request.Username, ct);
-        if (exists)
-        {
-            return Results.Conflict(
-                ApiResult<AuthResponse>.Fail($"Username '{request.Username}' is already taken."));
-        }
-
-        // Check department exists
-        var deptExists = await db.Departments.AnyAsync(d => d.DepartmentId == request.DepartmentId, ct);
-        if (!deptExists)
-        {
-            return Results.BadRequest(
-                ApiResult<AuthResponse>.Fail($"Department {request.DepartmentId} not found."));
-        }
-
-        var now = DateTime.UtcNow;
-        var employee = new Employee
-        {
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            Username = request.Username,
-            Password = request.Password, // In production, hash this!
-            Email = request.Email,
-            Mobile = request.Mobile,
-            Location = request.Location,
-            Role = request.Role,
-            DepartmentId = request.DepartmentId,
-            IsActive = true,
-            CreatedOn = now,
-            UpdatedOn = now
-        };
-
-        db.Employees.Add(employee);
-        await db.SaveChangesAsync(ct);
-
-        var response = new AuthResponse(
-            employee.EmployeeId,
-            employee.Username,
-            $"{employee.FirstName} {employee.LastName}",
-            employee.Role,
-            employee.Email
-        );
-
-        return Results.Created($"/api/auth/login", ApiResult<AuthResponse>.Ok(response, "Registration successful."));
     }
-
-    // ── POST /api/auth/login ───────────────────────────────────────────────────
 
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
-        AppDbContext db,
+        IAuthService service,
         CancellationToken ct)
     {
-        var employee = await db.Employees
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.Username == request.Username, ct);
+        var result = await service.LoginAsync(request, ct);
 
-        if (employee is null || employee.Password != request.Password) // In production, compare hashes!
-        {
+        if (result is null)
             return Results.Unauthorized();
-        }
 
-        if (!employee.IsActive)
-        {
-            return Results.Unauthorized();
-        }
-
-        var response = new AuthResponse(
-            employee.EmployeeId,
-            employee.Username,
-            $"{employee.FirstName} {employee.LastName}",
-            employee.Role,
-            employee.Email
-        );
-
-        return Results.Ok(ApiResult<AuthResponse>.Ok(response));
+        return Results.Ok(ApiResult<AuthResponse>.Ok(result));
     }
 }

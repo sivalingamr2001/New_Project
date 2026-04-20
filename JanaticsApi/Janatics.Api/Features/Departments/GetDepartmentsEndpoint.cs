@@ -1,8 +1,6 @@
 using Janatics.Application.Common.Models;
 using Janatics.Application.Features.Departments.Dtos;
-using Janatics.Application.Features.Departments.Mappers;
-using Janatics.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
+using Janatics.Application.Features.Departments.Services;
 
 namespace Janatics.Api.Features.Departments.Get;
 
@@ -28,46 +26,27 @@ public static class GetDepartmentsEndpoint
 
     private static async Task<IResult> HandleListAsync(
         [AsParameters] PagedQuery query,
-        AppDbContext db,
+        IDepartmentService service,
         CancellationToken ct)
     {
         query.Normalize();
 
-        var totalCount = await db.Departments.CountAsync(ct);
-
-        var departments = await db.Departments
-            .AsNoTracking()
-            .Include(d => d.Hod)
-            .OrderBy(d => d.DepartmentId)
-            .Skip(query.Skip)
-            .Take(query.PageSize)
-            .ToListAsync(ct);
-
-        var result = new PagedResult<DepartmentDto>
-        {
-            TotalCount = totalCount,
-            PageNumber = query.PageNumber,
-            PageSize = query.PageSize,
-            Data = departments.Select(DepartmentMapper.ToDto)
-        };
+        var result = await service.GetDepartmentsAsync(query.PageNumber, query.PageSize, ct);
 
         return Results.Ok(ApiResult<PagedResult<DepartmentDto>>.Ok(result));
     }
 
     private static async Task<IResult> HandleGetByIdAsync(
         int id,
-        AppDbContext db,
+        IDepartmentService service,
         CancellationToken ct)
     {
-        var department = await db.Departments
-            .AsNoTracking()
-            .Include(d => d.Hod)
-            .FirstOrDefaultAsync(d => d.DepartmentId == id, ct);
+        var department = await service.GetDepartmentByIdAsync(id, ct);
 
         if (department is null)
             return Results.NotFound(
                 ApiResult<DepartmentDto>.Fail($"Department with ID {id} not found."));
 
-        return Results.Ok(ApiResult<DepartmentDto>.Ok(DepartmentMapper.ToDto(department)));
+        return Results.Ok(ApiResult<DepartmentDto>.Ok(department));
     }
 }

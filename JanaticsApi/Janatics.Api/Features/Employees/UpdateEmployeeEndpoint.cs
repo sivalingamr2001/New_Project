@@ -1,8 +1,6 @@
 using Janatics.Application.Common.Models;
 using Janatics.Application.Features.Employees.Dtos;
-using Janatics.Application.Features.Employees.Mappers;
-using Janatics.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
+using Janatics.Application.Features.Employees.Services;
 
 namespace Janatics.Api.Features.Employees.Update;
 
@@ -22,59 +20,24 @@ public static class UpdateEmployeeEndpoint
     private static async Task<IResult> HandleAsync(
         int id,
         UpdateEmployeeRequest request,
-        AppDbContext db,
+        IEmployeeService service,
         CancellationToken ct)
     {
-        var employee = await db.Employees.FindAsync([id], ct);
-
-        if (employee is null)
-            return Results.NotFound(
-                ApiResult<EmployeeDto>.Fail($"Employee with ID {id} not found."));
-
-        var errors = Validate(request);
-        if (errors.Count > 0)
-            return Results.BadRequest(ApiResult<EmployeeDto>.Fail("Validation failed.", errors));
-
-        // Verify new department exists
-        if (request.DepartmentId != employee.DepartmentId)
+        try
         {
-            var deptExists = await db.Departments.AnyAsync(d => d.DepartmentId == request.DepartmentId, ct);
-            if (!deptExists)
-                return Results.BadRequest(
-                    ApiResult<EmployeeDto>.Fail($"Department {request.DepartmentId} not found."));
+            var result = await service.UpdateEmployeeAsync(id, request, ct);
+
+            if (result is null)
+                return Results.NotFound(
+                    ApiResult<EmployeeDto>.Fail($"Employee with ID {id} not found."));
+
+            return Results.Ok(ApiResult<EmployeeDto>.Ok(
+                result, "Employee updated successfully."));
         }
-
-        employee.FirstName    = request.FirstName;
-        employee.LastName     = request.LastName;
-        employee.Email        = request.Email;
-        employee.Mobile       = request.Mobile;
-        employee.Location     = request.Location;
-        employee.Role         = request.Role;
-        employee.IsActive     = request.IsActive;
-        employee.DepartmentId = request.DepartmentId;
-        employee.UpdatedOn    = DateTime.UtcNow;
-        employee.ModifiedOn   = DateTime.UtcNow;
-
-        await db.SaveChangesAsync(ct);
-
-        // Re-fetch with includes
-        var updated = await db.Employees
-            .AsNoTracking()
-            .Include(e => e.Department!).ThenInclude(d => d.Hod)
-            .FirstAsync(e => e.EmployeeId == id, ct);
-
-        return Results.Ok(ApiResult<EmployeeDto>.Ok(
-            EmployeeMapper.ToDto(updated), "Employee updated successfully."));
-    }
-
-    private static List<string> Validate(UpdateEmployeeRequest r)
-    {
-        var errors = new List<string>();
-        if (string.IsNullOrWhiteSpace(r.FirstName)) errors.Add("FirstName is required.");
-        if (string.IsNullOrWhiteSpace(r.LastName))  errors.Add("LastName is required.");
-        if (string.IsNullOrWhiteSpace(r.Email))     errors.Add("Email is required.");
-        if (string.IsNullOrWhiteSpace(r.Role))      errors.Add("Role is required.");
-        if (r.DepartmentId <= 0)                    errors.Add("Valid DepartmentId is required.");
-        return errors;
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(
+                ApiResult<EmployeeDto>.Fail(ex.Message));
+        }
     }
 }

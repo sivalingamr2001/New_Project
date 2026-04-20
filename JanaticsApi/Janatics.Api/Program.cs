@@ -22,20 +22,28 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        policy.WithOrigins(
+            "http://localhost:5173",      // Vite dev server
+            "http://localhost:3000",      // Alternative dev port
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:3000"
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
     });
 });
+
 
 var app = builder.Build();
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
 app.UseExceptionHandler();
-app.UseCors("AllowAll");
+app.UseCors("AllowFrontend");
+app.UseHttpsRedirection();
 
 if (app.Environment.IsDevelopment())
 {
@@ -47,7 +55,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
 app.MapFeatureEndpoints();
 
 // ── Initialize & Seed Database ───────────────────────────────────────────────

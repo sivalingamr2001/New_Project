@@ -110,6 +110,7 @@ export function ReusableAgGrid<TData = unknown>({
       pagination: true,
       paginationPageSize: pageSize,
       paginationPageSizeSelector: false, // we handle it ourselves
+      suppressPaginationPanel: true,
 
       // Sorting / filtering
       enableAdvancedFilter: false,

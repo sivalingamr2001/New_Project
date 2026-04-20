@@ -1,14 +1,8 @@
-import UserManagementTable from "./features/products/components/ProductCard"
-import Layout from "./layout/AppLayout"
+import { RouterProvider } from "react-router-dom";
+import { appRouter } from "@/routes/app-router";
 
 export function App() {
-  return (
-    <div className="flex min-h-svh p-0">
-      <Layout>
-        <UserManagementTable />
-      </Layout>
-    </div>
-  )
+  return <RouterProvider router={appRouter} />;
 }
 
-export default App
+export default App;

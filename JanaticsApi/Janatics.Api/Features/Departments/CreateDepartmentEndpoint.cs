@@ -1,9 +1,6 @@
 using Janatics.Application.Common.Models;
 using Janatics.Application.Features.Departments.Dtos;
-using Janatics.Application.Features.Departments.Mappers;
-using Janatics.Domain.Entities;
-using Janatics.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
+using Janatics.Application.Features.Departments.Services;
 
 namespace Janatics.Api.Features.Departments.Create;
 
@@ -21,43 +18,20 @@ public static class CreateDepartmentEndpoint
 
     private static async Task<IResult> HandleAsync(
         CreateDepartmentRequest request,
-        AppDbContext db,
+        IDepartmentService service,
         CancellationToken ct)
     {
-        // Validation
-        if (string.IsNullOrWhiteSpace(request.DepartmentName))
-            return Results.BadRequest(
-                ApiResult<DepartmentDto>.Fail("DepartmentName is required."));
-
-        // Verify HOD exists if provided
-        if (request.HodId.HasValue)
+        try
         {
-            var hodExists = await db.Employees.AnyAsync(e => e.EmployeeId == request.HodId.Value, ct);
-            if (!hodExists)
-                return Results.BadRequest(
-                    ApiResult<DepartmentDto>.Fail($"Employee {request.HodId} not found."));
+            var result = await service.CreateDepartmentAsync(request, ct);
+            return Results.Created(
+                $"/api/departments/{result.DepartmentId}",
+                ApiResult<DepartmentDto>.Ok(result, "Department created successfully."));
         }
-
-        var now = DateTime.UtcNow;
-        var department = new Department
+        catch (InvalidOperationException ex)
         {
-            DepartmentName = request.DepartmentName,
-            HodId = request.HodId,
-            CreatedOn = now,
-            UpdatedOn = now
-        };
-
-        db.Departments.Add(department);
-        await db.SaveChangesAsync(ct);
-
-        // Re-fetch with includes
-        var created = await db.Departments
-            .AsNoTracking()
-            .Include(d => d.Hod)
-            .FirstAsync(d => d.DepartmentId == department.DepartmentId, ct);
-
-        return Results.Created(
-            $"/api/departments/{created.DepartmentId}",
-            ApiResult<DepartmentDto>.Ok(DepartmentMapper.ToDto(created), "Department created successfully."));
+            return Results.BadRequest(
+                ApiResult<DepartmentDto>.Fail(ex.Message));
+        }
     }
 }

@@ -5,6 +5,10 @@ using Janatics.Api.Features.Departments.Update;
 using Janatics.Api.Features.Employees.Create;
 using Janatics.Api.Features.Employees.Get;
 using Janatics.Api.Features.Employees.Update;
+using Janatics.Api.Features.AccessRequests;
+using Janatics.Api.Features.Dashboard;
+using Janatics.Api.Features.AuditLogs;
+using Janatics.Api.Features.Notifications;
 
 namespace Janatics.Api;
 
@@ -26,6 +30,18 @@ public static class EndpointMappingExtensions
         GetDepartmentsEndpoint.Map(departments);
         CreateDepartmentEndpoint.Map(departments);
         UpdateDepartmentEndpoint.Map(departments);
+
+        var accessRequests = api.MapGroup("/access-requests");
+        AccessRequestEndpoints.Map(accessRequests);
+
+        var dashboard = api.MapGroup("/dashboard");
+        DashboardEndpoints.Map(dashboard);
+
+        var auditLogs = api.MapGroup("/audit-logs");
+        AuditLogEndpoints.Map(auditLogs);
+
+        var notifications = api.MapGroup("/notifications");
+        NotificationEndpoints.Map(notifications);
 
         app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
             .WithName("HealthCheck")

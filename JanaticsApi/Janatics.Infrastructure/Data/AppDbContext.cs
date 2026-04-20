@@ -9,6 +9,10 @@ public class AppDbContext : DbContext
 
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<Department> Departments => Set<Department>();
+    public DbSet<AccessRequestEntity> AccessRequests => Set<AccessRequestEntity>();
+    public DbSet<AccessItemEntity> AccessItems => Set<AccessItemEntity>();
+    public DbSet<AccessApprovalEntity> AccessApprovals => Set<AccessApprovalEntity>();
+    public DbSet<AccessReqAuditEntity> AccessAuditLogs => Set<AccessReqAuditEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,6 +67,71 @@ public class AppDbContext : DbContext
              .WithMany()
              .HasForeignKey(x => x.HodId)
              .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ── Access Request ────────────────────────────────────────────────────
+        modelBuilder.Entity<AccessRequestEntity>(ar =>
+        {
+            ar.ToTable("Jan_AccessRequest");
+            ar.HasKey(x => x.AccessReqId);
+            ar.Property(x => x.AccessReqId).ValueGeneratedOnAdd();
+            ar.Property(x => x.CreatedOn).IsRequired();
+            ar.Property(x => x.CreatedBy).HasMaxLength(100);
+            ar.Property(x => x.ModifiedBy).HasMaxLength(100);
+
+            // AccessRequest → AccessItem (one-to-many)
+            ar.HasMany(x => x.AccessItems)
+             .WithOne()
+             .HasForeignKey(ai => ai.AccessReqId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Access Item ───────────────────────────────────────────────────────
+        modelBuilder.Entity<AccessItemEntity>(ai =>
+        {
+            ai.HasKey(x => x.AccessItemId);
+            ai.Property(x => x.AccessItemId).ValueGeneratedOnAdd();
+            ai.Property(x => x.FolderPath).IsRequired().HasMaxLength(500);
+            ai.Property(x => x.Reason).IsRequired().HasMaxLength(1000);
+            ai.Property(x => x.CreatedOn).IsRequired();
+            ai.Property(x => x.CreatedBy).HasMaxLength(100);
+            ai.Property(x => x.ModifiedBy).HasMaxLength(100);
+        });
+
+        // ── Access Approval ───────────────────────────────────────────────────
+        modelBuilder.Entity<AccessApprovalEntity>(aa =>
+        {
+            aa.HasKey(x => x.AccessApproveId);
+            aa.Property(x => x.AccessApproveId).ValueGeneratedOnAdd();
+            aa.Property(x => x.Comments).HasMaxLength(1000);
+            aa.Property(x => x.CreatedOn).IsRequired();
+            aa.Property(x => x.CreatedBy).HasMaxLength(100);
+            aa.Property(x => x.ModifiedBy).HasMaxLength(100);
+
+            // Foreign keys (no navigation properties needed)
+            aa.HasIndex(x => x.AccessReqId);
+            aa.HasIndex(x => x.AccessItemId);
+        });
+
+        // ── Access Audit ──────────────────────────────────────────────────────
+        modelBuilder.Entity<AccessReqAuditEntity>(audit =>
+        {
+            audit.HasKey(x => x.AuditId);
+            audit.Property(x => x.AuditId).ValueGeneratedOnAdd();
+            audit.Property(x => x.EventType).IsRequired().HasMaxLength(100);
+            audit.Property(x => x.Message).HasMaxLength(2000);
+            audit.Property(x => x.RecipientEmpId).IsRequired();
+            audit.Property(x => x.RecipientName).HasMaxLength(200);
+            audit.Property(x => x.RecipientRole).HasMaxLength(100);
+            audit.Property(x => x.IsRead).HasDefaultValue(false);
+            audit.Property(x => x.CreatedOn).IsRequired();
+            audit.Property(x => x.CreatedBy).HasMaxLength(100);
+            audit.Property(x => x.ModifiedBy).HasMaxLength(100);
+
+            // Foreign keys (no navigation properties needed)
+            audit.HasIndex(x => x.AccessReqId);
+            audit.HasIndex(x => x.AccessItemId);
+            audit.HasIndex(x => x.AccessApproveId);
         });
     }
 }

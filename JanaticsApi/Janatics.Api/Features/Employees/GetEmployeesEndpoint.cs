@@ -1,8 +1,6 @@
 using Janatics.Application.Common.Models;
 using Janatics.Application.Features.Employees.Dtos;
-using Janatics.Application.Features.Employees.Mappers;
-using Janatics.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
+using Janatics.Application.Features.Employees.Services;
 
 namespace Janatics.Api.Features.Employees.Get;
 
@@ -26,52 +24,29 @@ public static class GetEmployeesEndpoint
             .Produces<ApiResult<EmployeeDto>>(StatusCodes.Status404NotFound);
     }
 
-    // ── GET /api/employees?pageNumber=1&pageSize=10 ───────────────────────────
-
     private static async Task<IResult> HandleListAsync(
         [AsParameters] PagedQuery query,
-        AppDbContext db,
+        IEmployeeService service,
         CancellationToken ct)
     {
         query.Normalize();
 
-        var totalCount = await db.Employees.CountAsync(ct);
-
-        var employees = await db.Employees
-            .AsNoTracking()
-            .Include(e => e.Department!).ThenInclude(d => d.Hod)
-            .OrderBy(e => e.EmployeeId)
-            .Skip(query.Skip)
-            .Take(query.PageSize)
-            .ToListAsync(ct);
-
-        var result = new PagedResult<EmployeeDto>
-        {
-            TotalCount = totalCount,
-            PageNumber = query.PageNumber,
-            PageSize = query.PageSize,
-            Data = employees.Select(EmployeeMapper.ToDto)
-        };
+        var result = await service.GetEmployeesAsync(query.PageNumber, query.PageSize, ct);
 
         return Results.Ok(ApiResult<PagedResult<EmployeeDto>>.Ok(result));
     }
 
-    // ── GET /api/employees/{id} ───────────────────────────────────────────────
-
     private static async Task<IResult> HandleGetByIdAsync(
         int id,
-        AppDbContext db,
+        IEmployeeService service,
         CancellationToken ct)
     {
-        var employee = await db.Employees
-            .AsNoTracking()
-            .Include(e => e.Department!).ThenInclude(d => d.Hod)
-            .FirstOrDefaultAsync(e => e.EmployeeId == id, ct);
+        var employee = await service.GetEmployeeByIdAsync(id, ct);
 
         if (employee is null)
             return Results.NotFound(
                 ApiResult<EmployeeDto>.Fail($"Employee with ID {id} not found."));
 
-        return Results.Ok(ApiResult<EmployeeDto>.Ok(EmployeeMapper.ToDto(employee)));
+        return Results.Ok(ApiResult<EmployeeDto>.Ok(employee));
     }
 }

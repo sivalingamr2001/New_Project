@@ -1,4 +1,9 @@
+using Janatics.Application.Features.AccessRequests.Services;
+using Janatics.Application.Features.Auth.Services;
+using Janatics.Application.Features.Departments.Services;
+using Janatics.Application.Features.Employees.Services;
 using Janatics.Infrastructure.Data;
+using Janatics.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,6 +51,12 @@ public static class DatabaseExtensions
                         "Valid options are: MySQL, SQLite, Oracle.");
             }
         });
+
+        // Register application services
+        services.AddScoped<IAccessRequestService, AccessRequestService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IDepartmentService, DepartmentService>();
+        services.AddScoped<IEmployeeService, EmployeeService>();
 
         return services;
     }

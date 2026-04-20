@@ -1,8 +1,6 @@
 using Janatics.Application.Common.Models;
 using Janatics.Application.Features.Departments.Dtos;
-using Janatics.Application.Features.Departments.Mappers;
-using Janatics.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
+using Janatics.Application.Features.Departments.Services;
 
 namespace Janatics.Api.Features.Departments.Update;
 
@@ -22,42 +20,24 @@ public static class UpdateDepartmentEndpoint
     private static async Task<IResult> HandleAsync(
         int id,
         UpdateDepartmentRequest request,
-        AppDbContext db,
+        IDepartmentService service,
         CancellationToken ct)
     {
-        var department = await db.Departments.FindAsync([id], ct);
-
-        if (department is null)
-            return Results.NotFound(
-                ApiResult<DepartmentDto>.Fail($"Department with ID {id} not found."));
-
-        // Validation
-        if (string.IsNullOrWhiteSpace(request.DepartmentName))
-            return Results.BadRequest(
-                ApiResult<DepartmentDto>.Fail("DepartmentName is required."));
-
-        // Verify HOD exists if provided
-        if (request.HodId.HasValue)
+        try
         {
-            var hodExists = await db.Employees.AnyAsync(e => e.EmployeeId == request.HodId.Value, ct);
-            if (!hodExists)
-                return Results.BadRequest(
-                    ApiResult<DepartmentDto>.Fail($"Employee {request.HodId} not found."));
+            var result = await service.UpdateDepartmentAsync(id, request, ct);
+
+            if (result is null)
+                return Results.NotFound(
+                    ApiResult<DepartmentDto>.Fail($"Department with ID {id} not found."));
+
+            return Results.Ok(ApiResult<DepartmentDto>.Ok(
+                result, "Department updated successfully."));
         }
-
-        department.DepartmentName = request.DepartmentName;
-        department.HodId = request.HodId;
-        department.UpdatedOn = DateTime.UtcNow;
-
-        await db.SaveChangesAsync(ct);
-
-        // Re-fetch with includes
-        var updated = await db.Departments
-            .AsNoTracking()
-            .Include(d => d.Hod)
-            .FirstAsync(d => d.DepartmentId == id, ct);
-
-        return Results.Ok(ApiResult<DepartmentDto>.Ok(
-            DepartmentMapper.ToDto(updated), "Department updated successfully."));
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(
+                ApiResult<DepartmentDto>.Fail(ex.Message));
+        }
     }
 }
