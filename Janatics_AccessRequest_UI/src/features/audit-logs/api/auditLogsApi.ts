@@ -1,4 +1,5 @@
-import { apiClient } from "@/shared/lib/api-client";
+import { apiService, type ApiResponse } from "@/shared/lib/api-client";
+
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ export const auditLogApi = {
     pageNumber: number = 1,
     pageSize: number = 25
   ): Promise<PagedAuditLogs> => {
-    const response = await apiClient.get<PagedAuditLogs>(
+    const response = await apiService.get<PagedAuditLogs>(
       `/audit-logs?pageNumber=${pageNumber}&pageSize=${pageSize}`
     );
     return response.data;

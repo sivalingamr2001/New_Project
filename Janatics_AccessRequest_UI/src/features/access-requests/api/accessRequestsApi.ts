@@ -1,4 +1,4 @@
-import { apiClient } from "@/shared/lib/api-client";
+import { apiService, type ApiResponse } from "@/shared/lib/api-client";
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -96,7 +96,7 @@ export const accessRequestApi = {
     pageNumber: number = 1,
     pageSize: number = 25
   ): Promise<PagedResult<AccessRequestDto>> => {
-    const response = await apiClient.get<{ data: PagedResult<AccessRequestDto> }>(
+    const response = await apiService.get<{ data: PagedResult<AccessRequestDto> }>(
       `/access-requests?pageNumber=${pageNumber}&pageSize=${pageSize}`
     );
     return response.data.data;
@@ -106,7 +106,7 @@ export const accessRequestApi = {
    * Get access request details
    */
   getRequestDetails: async (requestId: number): Promise<AccessRequestDto> => {
-    const response = await apiClient.get<{ data: AccessRequestDto }>(
+    const response = await apiService.get<{ data: AccessRequestDto }>(
       `/access-requests/${requestId}`
     );
     return response.data.data;
@@ -116,7 +116,7 @@ export const accessRequestApi = {
    * Create new access request
    */
   createRequest: async (dto: CreateAccessRequestDto): Promise<AccessRequestDto> => {
-    const response = await apiClient.post<{ data: AccessRequestDto }>(
+    const response = await apiService.post<{ data: AccessRequestDto }>(
       "/access-requests",
       dto
     );
@@ -130,7 +130,7 @@ export const accessRequestApi = {
     requestId: number,
     dto: UpdateAccessRequestStatusDto
   ): Promise<AccessRequestDto> => {
-    const response = await apiClient.post<{ data: AccessRequestDto }>(
+    const response = await apiService.post<{ data: AccessRequestDto }>(
       `/access-requests/${requestId}/review-hod`,
       dto
     );
@@ -144,7 +144,7 @@ export const accessRequestApi = {
     requestId: number,
     dto: UpdateAccessRequestStatusDto
   ): Promise<AccessRequestDto> => {
-    const response = await apiClient.post<{ data: AccessRequestDto }>(
+    const response = await apiService.post<{ data: AccessRequestDto }>(
       `/access-requests/${requestId}/review-it`,
       dto
     );
@@ -155,7 +155,7 @@ export const accessRequestApi = {
    * Get audit logs for a request
    */
   getAuditLogs: async (requestId: number): Promise<AccessReqAuditDto[]> => {
-    const response = await apiClient.get<{ data: AccessReqAuditDto[] }>(
+    const response = await apiService.get<{ data: AccessReqAuditDto[] }>(
       `/access-requests/${requestId}/audit`
     );
     return response.data.data;
@@ -165,7 +165,7 @@ export const accessRequestApi = {
    * Renew an approved request
    */
   renewRequest: async (requestId: number): Promise<AccessRequestDto> => {
-    const response = await apiClient.post<{ data: AccessRequestDto }>(
+    const response = await apiService.post<{ data: AccessRequestDto }>(
       `/access-requests/${requestId}/renew`,
       {}
     );
@@ -179,7 +179,7 @@ export const accessRequestApi = {
     requestId: number,
     dto: CreateAccessItemDto
   ): Promise<AccessRequestDto> => {
-    const response = await apiClient.post<{ data: AccessRequestDto }>(
+    const response = await apiService.post<{ data: AccessRequestDto }>(
       `/access-requests/${requestId}/resubmit`,
       dto
     );
@@ -193,7 +193,7 @@ export const accessRequestApi = {
     requestId: number,
     dto: { accessItemId: number; revokedBy: string }
   ): Promise<AccessRequestDto> => {
-    const response = await apiClient.post<{ data: AccessRequestDto }>(
+    const response = await apiService.post<{ data: AccessRequestDto }>(
       `/access-requests/${requestId}/revoke`,
       dto
     );

@@ -1,4 +1,4 @@
-import { apiClient } from "@/shared/lib/api-client";
+import { apiService, type ApiResponse } from "@/shared/lib/api-client";
 
 interface ApiResult<T> {
   data: T;
@@ -44,7 +44,7 @@ export const notificationApi = {
     pageNumber: number = 1,
     pageSize: number = 25
   ): Promise<PagedNotifications> => {
-    const response = await apiClient.get<ApiResult<PagedResult<NotificationDto>>>(
+    const response = await apiService.get<ApiResult<PagedResult<NotificationDto>>>(
       `/notifications?pageNumber=${pageNumber}&pageSize=${pageSize}`
     );
 
@@ -65,7 +65,7 @@ export const notificationApi = {
    * Mark notification as read
    */
   markAsRead: async (notificationId: string): Promise<NotificationDto> => {
-    const response = await apiClient.post<ApiResult<NotificationDto>>(
+    const response = await apiService.post<ApiResult<NotificationDto>>(
       `/notifications/${notificationId}/mark-read`
     );
 
